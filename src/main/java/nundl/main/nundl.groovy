@@ -1,5 +1,6 @@
 package main
 
+import groovy.transform.CompileStatic
 import net.htmlparser.jericho.Element
 import net.htmlparser.jericho.HTMLElementName
 import net.htmlparser.jericho.Source
@@ -27,6 +28,7 @@ import java.util.regex.Pattern
         @Grab(group = 'org.apache.httpcomponents', module = 'httpclient', version = '4.5'),
         @Grab(group = 'joda-time', module = 'joda-time', version = '2.8.1')
 ])
+@CompileStatic
 class nundl {
     private static DateTimeFormatter websiteDTF = DateTimeFormat.forPattern("dd.MM.yyyy HH.mm"); //23.10.2014 05.31
     private static DateTimeFormatter fileDTF = DateTimeFormat.forPattern("yyMMdd");
@@ -55,7 +57,7 @@ class nundl {
             }.each { Element flashvars ->
                 try {
                     def paramMap = flashvars.getAttributeValue("value").split("&").collect {
-                        URLDecoder.decode(it, "UTF-8").split("=")
+                        URLDecoder.decode(it as String, "UTF-8").split("=")
                     }.collectEntries {
                         [(it[0]): it[1]]
                     }
