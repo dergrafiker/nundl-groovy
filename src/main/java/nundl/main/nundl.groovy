@@ -22,11 +22,11 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 @Grapes([
+        @Grab(group = 'commons-io', module = 'commons-io', version = '2.4'),
+        @Grab(group = 'joda-time', module = 'joda-time', version = '2.8.1'),
         @Grab(group = 'net.htmlparser.jericho', module = 'jericho-html', version = '3.3'),
         @Grab(group = 'org.apache.commons', module = 'commons-lang3', version = '3.4'),
-        @Grab(group = 'commons-io', module = 'commons-io', version = '2.4'),
-        @Grab(group = 'org.apache.httpcomponents', module = 'httpclient', version = '4.5'),
-        @Grab(group = 'joda-time', module = 'joda-time', version = '2.8.1')
+        @Grab(group = 'org.apache.httpcomponents', module = 'httpclient', version = '4.5')
 ])
 @CompileStatic
 class nundl {
