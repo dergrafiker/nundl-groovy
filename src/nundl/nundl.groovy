@@ -59,14 +59,12 @@ class nundl {
             String newFilename = fileDTF.print(webDateTime) + "_noob_und_nerd_" + filename + ".mp3"
             File outFile = new File(baseDir, newFilename)
 
-            if (outFile.exists()) {
-                println "$outFile.name already exists skipping"
-                return
-            }
-            println(String.format("%s -> %s", playerLink.toString(), outFile.getAbsolutePath()));
             if (pretendDownloading) {
-                println "download skipped - just pretending"
+                println "${playerLink.toString()} download skipped - just pretending"
+            } else if (outFile.exists()) {
+                println "$outFile.name already exists skipping"
             } else {
+                println(String.format("%s -> %s", playerLink.toString(), outFile.getAbsolutePath()));
                 try {
                     HttpResponse response = httpClient.execute(new HttpGet(playerLink));
                     Files.copy(response.getEntity().getContent(), Paths.get(outFile.toURI()), StandardCopyOption.REPLACE_EXISTING);
@@ -74,7 +72,6 @@ class nundl {
                     e.printStackTrace();
                 }
             }
-
         }
     }
 }
