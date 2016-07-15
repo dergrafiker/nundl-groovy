@@ -25,15 +25,27 @@ import java.nio.file.StandardCopyOption
 ])
 @CompileStatic
 class nundl {
-    private static DateTimeFormatter websiteDTF = DateTimeFormat.forPattern("yyyy-MM-dd"); //2015-07-21
-    private static DateTimeFormatter fileDTF = DateTimeFormat.forPattern("yyMMdd");
-    private static HttpClient httpClient;
-
     public static void main(String[] args) {
+        DateTimeFormatter websiteDTF = DateTimeFormat.forPattern("yyyy-MM-dd"); //2015-07-21
+        DateTimeFormatter fileDTF = DateTimeFormat.forPattern("yyMMdd");
+
         def startUri = new URI("http://www1.wdr.de/radio/1live/comedy/noob-und-nerd/")
         def baseDir = new File(args[0])
 
-        httpClient = initHttpClient()
+        final String host = System.getProperty("http.proxyHost");
+        final String port = System.getProperty("http.proxyPort");
+        HttpClient httpClient;
+        if (host != null && port != null) {
+            HttpHost proxy = new HttpHost(host, Integer.valueOf(port));
+            httpClient = HttpClients.custom()
+                    .setUserAgent("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0")
+                    .setProxy(proxy)
+                    .build();
+        } else {
+            httpClient = HttpClients.custom()
+                    .setUserAgent("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0")
+                    .build();
+        }
 
         boolean pretendDownloading = false;
 
@@ -50,47 +62,25 @@ class nundl {
             def filename = fields[1]
 
             DateTime webDateTime = websiteDTF.parseDateTime(date).withMillisOfDay(0)
-            downloadFile(playerLink, webDateTime, filename, baseDir, pretendDownloading)
-        }
-    }
+            String newFilename = fileDTF.print(webDateTime) + "_noob_und_nerd_" + filename + ".mp3"
+            File outFile = new File(baseDir, newFilename)
 
-    private static HttpClient initHttpClient() {
-        final String host = System.getProperty("http.proxyHost");
-        final String port = System.getProperty("http.proxyPort");
-        HttpClient httpClient;
-        if (host != null && port != null) {
-            HttpHost proxy = new HttpHost(host, Integer.valueOf(port));
-            httpClient = HttpClients.custom()
-                    .setUserAgent("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0")
-                    .setProxy(proxy)
-                    .build();
-        } else {
-            httpClient = HttpClients.custom()
-                    .setUserAgent("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0")
-                    .build();
-        }
-        httpClient;
-    }
-
-    private
-    static void downloadFile(URI playerLink, DateTime webDateTime, String title, File baseDir, boolean pretendDownloading) {
-        String filename = fileDTF.print(webDateTime) + "_noob_und_nerd_" + title + ".mp3"
-        File outFile = new File(baseDir, filename)
-
-        if (outFile.exists()) {
-            println "$outFile.name already exists skipping"
-            return
-        }
-        println(String.format("%s -> %s", playerLink.toString(), outFile.getAbsolutePath()));
-        if (pretendDownloading) {
-            println "download skipped - just pretending"
-        } else {
-            try {
-                HttpResponse response = httpClient.execute(new HttpGet(playerLink));
-                Files.copy(response.getEntity().getContent(), Paths.get(outFile.toURI()), StandardCopyOption.REPLACE_EXISTING);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (outFile.exists()) {
+                println "$outFile.name already exists skipping"
+                return
             }
+            println(String.format("%s -> %s", playerLink.toString(), outFile.getAbsolutePath()));
+            if (pretendDownloading) {
+                println "download skipped - just pretending"
+            } else {
+                try {
+                    HttpResponse response = httpClient.execute(new HttpGet(playerLink));
+                    Files.copy(response.getEntity().getContent(), Paths.get(outFile.toURI()), StandardCopyOption.REPLACE_EXISTING);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
         }
     }
 }
