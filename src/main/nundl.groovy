@@ -48,6 +48,8 @@ class nundl {
 
         httpClient = initHttpClient()
 
+        boolean pretendDownloading = true;
+
         List<URI> playerLinks = collectPLayerLinks(startUri)
 
         playerLinks.each { URI playerLink ->
@@ -68,10 +70,10 @@ class nundl {
                     if (trackerClipAirTime != null) {
                         DateTime webDateTime = websiteDTF.parseDateTime(trackerClipAirTime).withMillisOfDay(0)
                         title = cleanTitle(title)
-                        downloadFile(dslSrc, webDateTime, title, baseDir)
+                        downloadFile(dslSrc, webDateTime, title, baseDir, pretendDownloading)
                     } else {
-                        if (StringUtils.containsIgnoreCase(title, "Weihnachten bei Noob und Nerd") && title.contains("2014") ) {
-                            handleCornerCaseXmas2014(dslSrc, title, baseDir)
+                        if (StringUtils.containsIgnoreCase(title, "Weihnachten bei Noob und Nerd") && title.contains("2014")) {
+                            handleCornerCaseXmas2014(dslSrc, title, baseDir, pretendDownloading)
                         } else {
                             println "could not find trackerClipAirTime in ${paramMap}"
                         }
@@ -83,7 +85,7 @@ class nundl {
         }
     }
 
-    private static void handleCornerCaseXmas2014(URI dslSrc, String title, File baseDir) {
+    private static void handleCornerCaseXmas2014(URI dslSrc, String title, File baseDir, boolean pretendDownloading) {
         xmas2014Matcher.reset(title)
         if (xmas2014Matcher.matches()) {
             def number = StringUtils.remove(title, "Weihnachten bei Noob und Nerd - ")
@@ -91,7 +93,7 @@ class nundl {
             number = StringUtils.leftPad(number, 2, '0')
             title = "weihnachten2014-teil" + number
             DateTime webDateTime = DateTime.parse("141225", fileDTF)
-            downloadFile(dslSrc, webDateTime, title, baseDir)
+            downloadFile(dslSrc, webDateTime, title, baseDir, pretendDownloading)
         }
     }
 
@@ -140,7 +142,8 @@ class nundl {
         input
     }
 
-    private static void downloadFile(URI playerLink, DateTime webDateTime, String title, File baseDir) {
+    private
+    static void downloadFile(URI playerLink, DateTime webDateTime, String title, File baseDir, boolean pretendDownloading) {
         String filename = fileDTF.print(webDateTime) + "_noob_und_nerd_" + title + ".mp3"
         File outFile = new File(baseDir, filename)
 
@@ -149,11 +152,15 @@ class nundl {
             return
         }
         println(String.format("%s -> %s", playerLink.toString(), outFile.getAbsolutePath()));
-        try {
-            HttpResponse response = httpClient.execute(new HttpGet(playerLink));
-            Files.copy(response.getEntity().getContent(), Paths.get(outFile.toURI()), StandardCopyOption.REPLACE_EXISTING);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (pretendDownloading) {
+            println "download skipped - just pretending"
+        } else {
+            try {
+                HttpResponse response = httpClient.execute(new HttpGet(playerLink));
+                Files.copy(response.getEntity().getContent(), Paths.get(outFile.toURI()), StandardCopyOption.REPLACE_EXISTING);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
