@@ -33,9 +33,7 @@ class nundl {
         boolean pretendDownloading = false;
         File baseDir = new File(args[0])
 
-        HttpClient httpClient;
         HttpHost proxy = null
-
         final String host = System.getProperty("http.proxyHost");
         final String port = System.getProperty("http.proxyPort");
         if (host != null && port != null) {
@@ -43,7 +41,7 @@ class nundl {
         }
 
         String userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1"
-        httpClient = HttpClients.custom().setUserAgent(userAgent).setProxy(proxy).build();
+        HttpClient httpClient = HttpClients.custom().setUserAgent(userAgent).setProxy(proxy).build();
 
         Source mainPageSource = new Source(startUri.toURL());
         List<URI> playerLinks = mainPageSource.getAllElements(HTMLElementName.A).findAll {
