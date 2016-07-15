@@ -35,15 +35,16 @@ class nundl {
         final String host = System.getProperty("http.proxyHost");
         final String port = System.getProperty("http.proxyPort");
         HttpClient httpClient;
+        def userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1"
         if (host != null && port != null) {
             HttpHost proxy = new HttpHost(host, Integer.valueOf(port));
             httpClient = HttpClients.custom()
-                    .setUserAgent("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0")
+                    .setUserAgent(userAgent)
                     .setProxy(proxy)
                     .build();
         } else {
             httpClient = HttpClients.custom()
-                    .setUserAgent("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0")
+                    .setUserAgent(userAgent)
                     .build();
         }
 
