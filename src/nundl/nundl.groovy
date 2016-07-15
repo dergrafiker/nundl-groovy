@@ -1,11 +1,8 @@
 package nundl
 
 import groovy.transform.CompileStatic
-import net.htmlparser.jericho.Element
 import net.htmlparser.jericho.HTMLElementName
 import net.htmlparser.jericho.Source
-import org.apache.commons.lang3.StringUtils
-import org.apache.commons.lang3.text.WordUtils
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
 import org.apache.http.client.HttpClient
@@ -18,8 +15,6 @@ import org.joda.time.format.DateTimeFormatter
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 
 @Grapes([
         @Grab(group = 'commons-io', module = 'commons-io', version = '2.4'),
@@ -30,70 +25,27 @@ import java.util.regex.Pattern
 ])
 @CompileStatic
 class nundl {
-    private static DateTimeFormatter websiteDTF = DateTimeFormat.forPattern("dd.MM.yyyy HH.mm"); //23.10.2014 05.31
+    private static DateTimeFormatter websiteDTF = DateTimeFormat.forPattern("yyyy-MM-dd"); //2015-07-21
     private static DateTimeFormatter fileDTF = DateTimeFormat.forPattern("yyMMdd");
-    private static Matcher parenthesisMatcher = Pattern.compile("\\([a-zA-z0-9\\.]+\\)").matcher("")
-    private static Matcher nonAlphanumMatcher = Pattern.compile("[^a-zA-z0-9]+").matcher("")
-    private static Matcher whitespaceMatcher = Pattern.compile("\\s+").matcher("")
-    private
-    static Matcher xmas2014Matcher = Pattern.compile(Pattern.quote("Weihnachten bei Noob und Nerd - ") + "\\d+" + Pattern.quote(" (25.12.2014)")).matcher("")
     private static HttpClient httpClient;
-    public static final String[] GERMANCHARS = ["ä", "Ä", "ö", "Ö", "ü", "Ü", "ß"]
-    public static final String[] GERMANCHARREPLACEMENTS = ["ae", "Ae", "oe", "Oe", "ue", "Ue", "ss"]
-
 
     public static void main(String[] args) {
-        def startUri = new URI("http://www.einslive.de/einslive/comedy/noob-und-nerd/")
+        def startUri = new URI("http://www1.wdr.de/radio/1live/comedy/noob-und-nerd/")
         def baseDir = new File(args[0])
 
         httpClient = initHttpClient()
 
-        boolean pretendDownloading = true;
+        boolean pretendDownloading = false;
 
         List<URI> playerLinks = collectPLayerLinks(startUri)
 
         playerLinks.each { URI playerLink ->
-            Source subLink = new Source(playerLink.toURL());
-            subLink.getAllElements("param").findAll {
-                it.getAttributeValue("name").equalsIgnoreCase("flashvars")
-            }.each { Element flashvars ->
-                try {
-                    def paramMap = flashvars.getAttributeValue("value").split("&").collect {
-                        URLDecoder.decode(it as String, "UTF-8").split("=")
-                    }.collectEntries {
-                        [(it[0]): it[1]]
-                    }
+            def fields = playerLink.path.split("/").last().replaceAll("einslive", "").replaceAll("1livenoobundnerd_", "").replaceAll("1livenoobundnerd\\d+_", "").replaceAll("\\.mp3", "").split("_")
+            def date = fields[0]
+            def filename = fields[1]
 
-                    def trackerClipAirTime = paramMap.get("trackerClipAirTime") as String
-                    def title = paramMap.get("trackerClipTitle") as String
-                    URI dslSrc = new URI(paramMap.get("dslSrc") as String)
-                    if (trackerClipAirTime != null) {
-                        DateTime webDateTime = websiteDTF.parseDateTime(trackerClipAirTime).withMillisOfDay(0)
-                        title = cleanTitle(title)
-                        downloadFile(dslSrc, webDateTime, title, baseDir, pretendDownloading)
-                    } else {
-                        if (StringUtils.containsIgnoreCase(title, "Weihnachten bei Noob und Nerd") && title.contains("2014")) {
-                            handleCornerCaseXmas2014(dslSrc, title, baseDir, pretendDownloading)
-                        } else {
-                            println "could not find trackerClipAirTime in ${paramMap}"
-                        }
-                    }
-                } catch (Exception e) {
-                    println e.stackTrace
-                }
-            }
-        }
-    }
-
-    private static void handleCornerCaseXmas2014(URI dslSrc, String title, File baseDir, boolean pretendDownloading) {
-        xmas2014Matcher.reset(title)
-        if (xmas2014Matcher.matches()) {
-            def number = StringUtils.remove(title, "Weihnachten bei Noob und Nerd - ")
-            number = StringUtils.remove(number, " (25.12.2014)")
-            number = StringUtils.leftPad(number, 2, '0')
-            title = "weihnachten2014-teil" + number
-            DateTime webDateTime = DateTime.parse("141225", fileDTF)
-            downloadFile(dslSrc, webDateTime, title, baseDir, pretendDownloading)
+            DateTime webDateTime = websiteDTF.parseDateTime(date).withMillisOfDay(0)
+            downloadFile(playerLink, webDateTime, filename, baseDir, pretendDownloading)
         }
     }
 
@@ -113,33 +65,6 @@ class nundl {
                     .build();
         }
         httpClient;
-    }
-
-    private static String cleanTitle(String inputTitle) {
-        String cleanedTitle = inputTitle
-
-        cleanedTitle = StringUtils.remove(cleanedTitle, "| 1LIVE Noob und Nerd")
-        cleanedTitle = StringUtils.remove(cleanedTitle, "Noob und Nerd: ")
-        cleanedTitle = StringUtils.remove(cleanedTitle, "Noob & Nerd:")
-        cleanedTitle = StringUtils.remove(cleanedTitle, "Noob und Nerd")
-        cleanedTitle = StringUtils.remove(cleanedTitle, " - ")
-        cleanedTitle = removeAllOnMatch(parenthesisMatcher, cleanedTitle)
-
-        cleanedTitle = WordUtils.capitalize(cleanedTitle)
-        cleanedTitle = removeAllOnMatch(whitespaceMatcher, cleanedTitle)
-
-        cleanedTitle = StringUtils.replaceEachRepeatedly(cleanedTitle, GERMANCHARS, GERMANCHARREPLACEMENTS)
-        cleanedTitle = StringUtils.stripAccents(cleanedTitle)
-        cleanedTitle = removeAllOnMatch(nonAlphanumMatcher, cleanedTitle)
-        return cleanedTitle
-    }
-
-    private static String removeAllOnMatch(Matcher matcher, String input) {
-        matcher.reset(input)
-        if (matcher.find()) {
-            input = matcher.replaceAll("")
-        }
-        input
     }
 
     private
@@ -167,8 +92,7 @@ class nundl {
     private static List<URI> collectPLayerLinks(URI startUri) {
         Source mainPageSource = new Source(startUri.toURL());
         def listOfStrings = mainPageSource.getAllElements(HTMLElementName.A).findAll {
-            def content = it.getContent().toString().toLowerCase();
-            content.contains("noob") && content.contains("nerd") && it.getAttributeValue("href").contains("player")
+            it.attributes.getValue("class")?.equalsIgnoreCase("button download")
         }.collect {
             startUri.resolve(it.getAttributeValue("href"))
         }
