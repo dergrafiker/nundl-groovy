@@ -1,4 +1,4 @@
-package main
+package nundl
 
 import groovy.transform.CompileStatic
 import net.htmlparser.jericho.Element
