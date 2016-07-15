@@ -37,7 +37,12 @@ class nundl {
 
         boolean pretendDownloading = false;
 
-        List<URI> playerLinks = collectPLayerLinks(startUri)
+        Source mainPageSource = new Source(startUri.toURL());
+        List<URI> playerLinks = mainPageSource.getAllElements(HTMLElementName.A).findAll {
+            "button download".equalsIgnoreCase(it.attributes.getValue("class"))
+        }.collect {
+            startUri.resolve(it.getAttributeValue("href"))
+        }
 
         playerLinks.each { URI playerLink ->
             def fields = playerLink.path.split("/").last().replaceAll("einslive", "").replaceAll("1livenoobundnerd_", "").replaceAll("1livenoobundnerd\\d+_", "").replaceAll("\\.mp3", "").split("_")
@@ -87,15 +92,5 @@ class nundl {
                 e.printStackTrace();
             }
         }
-    }
-
-    private static List<URI> collectPLayerLinks(URI startUri) {
-        Source mainPageSource = new Source(startUri.toURL());
-        def listOfStrings = mainPageSource.getAllElements(HTMLElementName.A).findAll {
-            it.attributes.getValue("class")?.equalsIgnoreCase("button download")
-        }.collect {
-            startUri.resolve(it.getAttributeValue("href"))
-        }
-        listOfStrings
     }
 }
