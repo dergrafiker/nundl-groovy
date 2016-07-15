@@ -29,26 +29,21 @@ class nundl {
         DateTimeFormatter websiteDTF = DateTimeFormat.forPattern("yyyy-MM-dd"); //2015-07-21
         DateTimeFormatter fileDTF = DateTimeFormat.forPattern("yyMMdd");
 
-        def startUri = new URI("http://www1.wdr.de/radio/1live/comedy/noob-und-nerd/")
-        def baseDir = new File(args[0])
+        URI startUri = new URI("http://www1.wdr.de/radio/1live/comedy/noob-und-nerd/")
+        boolean pretendDownloading = false;
+        File baseDir = new File(args[0])
+
+        HttpClient httpClient;
+        HttpHost proxy = null
 
         final String host = System.getProperty("http.proxyHost");
         final String port = System.getProperty("http.proxyPort");
-        HttpClient httpClient;
-        def userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1"
         if (host != null && port != null) {
-            HttpHost proxy = new HttpHost(host, Integer.valueOf(port));
-            httpClient = HttpClients.custom()
-                    .setUserAgent(userAgent)
-                    .setProxy(proxy)
-                    .build();
-        } else {
-            httpClient = HttpClients.custom()
-                    .setUserAgent(userAgent)
-                    .build();
+            proxy = new HttpHost(host, Integer.valueOf(port));
         }
 
-        boolean pretendDownloading = false;
+        String userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1"
+        httpClient = HttpClients.custom().setUserAgent(userAgent).setProxy(proxy).build();
 
         Source mainPageSource = new Source(startUri.toURL());
         List<URI> playerLinks = mainPageSource.getAllElements(HTMLElementName.A).findAll {
@@ -58,9 +53,9 @@ class nundl {
         }
 
         playerLinks.each { URI playerLink ->
-            def fields = playerLink.path.split("/").last().replaceAll("einslive", "").replaceAll("1livenoobundnerd_", "").replaceAll("1livenoobundnerd\\d+_", "").replaceAll("\\.mp3", "").split("_")
-            def date = fields[0]
-            def filename = fields[1]
+            String[] fields = playerLink.path.split("/").last().replaceAll("einslive", "").replaceAll("1livenoobundnerd_", "").replaceAll("1livenoobundnerd\\d+_", "").replaceAll("\\.mp3", "").split("_")
+            String date = fields[0]
+            String filename = fields[1]
 
             DateTime webDateTime = websiteDTF.parseDateTime(date).withMillisOfDay(0)
             String newFilename = fileDTF.print(webDateTime) + "_noob_und_nerd_" + filename + ".mp3"
