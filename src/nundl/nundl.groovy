@@ -1,7 +1,6 @@
 package nundl
 
 import groovy.transform.CompileStatic
-import net.htmlparser.jericho.HTMLElementName
 import net.htmlparser.jericho.Source
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
@@ -44,9 +43,7 @@ class nundl {
         HttpClient httpClient = HttpClients.custom().setUserAgent(userAgent).setProxy(proxy).build();
 
         Source mainPageSource = new Source(startUri.toURL());
-        List<URI> playerLinks = mainPageSource.getAllElements(HTMLElementName.A).findAll {
-            "button download".equalsIgnoreCase(it.attributes.getValue("class"))
-        }.collect {
+        List<URI> playerLinks = mainPageSource.getAllElements("class", "button download", true).collect() {
             startUri.resolve(it.getAttributeValue("href"))
         }
 
