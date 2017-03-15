@@ -47,7 +47,7 @@ class nundl {
             startUri.resolve(it.getAttributeValue("href"))
         }
 
-        playerLinks.each { URI playerLink ->
+        playerLinks.reverse().each { URI playerLink ->
             String[] fields = playerLink.path.split("/").last().replaceAll("einslive", "").replaceAll("1livenoobundnerd_", "").replaceAll("1livenoobundnerd\\d+_", "").replaceAll("\\.mp3", "").split("_")
             String date = fields[0]
             String filename = fields[1]
